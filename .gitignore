@@ -1,3 +1,5 @@
 BillingUsage-ATT.html
 BillingUsage-ATT_files/
+credentials.py
+*.pyc
 
