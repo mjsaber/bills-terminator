@@ -1,13 +1,14 @@
 import credentials
 from bs4 import BeautifulSoup
 from twilio.rest import TwilioRestClient
-soup = BeautifulSoup(open("BillingUsage-ATT.html"), "html.parser")
+soup = BeautifulSoup(open("Billing & Usage - AT&T.htm"), "html.parser")
 
 
 def get_account_summary():
 	mpc = get_mpc()
 	# find all personal fee
-	summary = soup.find_all("div", {"class": "float-right PadTop10 price-orange padRight20 "})
+	# personal fee class
+	summary = soup.find_all("div", {"class": "float-right accRow bold padRight20 colorBlack"})
 	result = {}
 	for s in summary:
 		t = s.find_previous_sibling("div")
@@ -19,15 +20,13 @@ def get_account_summary():
 
 
 def get_mpc():
-	# TODO:
-	holder_insurance = 9.99
 	# find first div with 'Monthly Plan Charges' title
 	holder = soup.find(title = 'Monthly Plan Charges').parent
 	# find span tag
 	spans = holder.find_all('span')
 	for span in spans:
 		if 'class' in span.attrs and 'colorBlack' in span.attrs['class']:
-			holder_mpc = get_price(span) - holder_insurance;
+			holder_mpc = get_price(span);
 			print 'Shared Monthly Plan Charges(data): {}'.format(holder_mpc)
 			return holder_mpc
 
@@ -58,9 +57,13 @@ def send_message(client, members):
 		)
 
 
+def print_message(menbers):
+	for user, info in members.iteritems():
+		print "%s: data: %s base:%s\n" % (user, info['data'], info['base'])
+
 if __name__ == '__main__':
 	twilio_client = TwilioRestClient(credentials.twilio['account_sid'], credentials.twilio['auth_token'])
+	# members = {'310-890-1520': {'phone': '+13108901520', 'data': 10.7, 'base': 20.18}}
 	members = get_account_summary()
-	# members = {'310-614-6728': {'phone': '+13106146728', 'data': 10.7, 'base': 30.88}}
-	print members
+	print_message(members)
 	send_message(twilio_client, members)
