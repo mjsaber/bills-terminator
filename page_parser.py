@@ -16,8 +16,11 @@ def get_account_summary():
 		base = get_price(s)
 		# print "{}: total = {}(base) + {}(data per user) = {}".format(phone, base, mpc/10, base + mpc/10)
 		result[phone] = {'phone': trans_phone_format(phone), 'data': mpc/10, 'base': base}
-	return result
 
+        # rearrange distribution of extra data charge to make it more fair
+	if(soup.findAll(text='Data overage charge')):
+	    result = trans_extra_data_fee(result)
+	return result
 
 def get_mpc():
 	# find first div with 'Monthly Plan Charges' title
@@ -43,6 +46,9 @@ def get_phone(tag):
 def trans_phone_format(phone):
 	return '+1' + phone.replace('-', '')
 
+# from xxx.xxx.xxxx to xxx-xxx-xxxx
+def trans_phone_format2(phone):
+         return '{}-{}-{}'.format(phone.split('.')[0], phone.split('.')[1], phone.split('.')[2])
 
 def get_msg_body(user, info):
 	return "Dear {}: Your monthly phone bill in total is {}, including shared data fee({}) and base fee({}). Please pay to Jun Ma at your convinence. This message is auto-generated, if you have any suggestion or concern, please contact Jun Ma at 310-614-6728. You're welcome to contribute to this project at https://github.com/mjsaber/bills-terminator. Thanks for your time.".format(user, info['data'] + info['base'], info['data'], info['base'])
@@ -60,6 +66,42 @@ def send_message(client, members):
 def print_message(menbers):
 	for user, info in members.iteritems():
 		print "%s: data: %s base:%s\n" % (user, info['data'], info['base'])
+
+# If extra fee is charged, go download https://www.att.com/olam/billUsageTiles.myworld and save as "billusage.htm" 
+def trans_extra_data_fee(members): # need to judge there is extra usage
+    owner_phone = "310-600-0358";
+    data_plan = 20.0;
+    usage_quota = data_plan * .1;
+    soup_data = BeautifulSoup(open("billusage.htm"), "html.parser")
+    extra_datausage = float(soup_data.find_all("div", {"class": "additionalColCenter"})[1].text.split('M')[0]) / 1024 # in GB
+    total_datausage = data_plan + extra_datausage
+
+    ths = soup_data.find_all("th", {"class": "PadTop0 BotSolidBorder borderRightSolid borderLeftSolid left", "headers": "header1"})
+    extra_data_usage_dict = {};
+
+    #print(ths[0].text[4:-1])
+    real_extra_usage = total_datausage * float(ths[0].text[4:-1]) / 100 - usage_quota
+    extra_data_usage_dict[owner_phone] = real_extra_usage if real_extra_usage >= 0 else 0
+
+    total_extra_percent = extra_data_usage_dict[owner_phone]
+    for i in range(1, 10):
+        phone = ths[i].text[0:12]
+        phone = trans_phone_format2(phone)
+        #print(phone)
+        real_extra_usage = total_datausage * float(ths[i].text[13:-1]) / 100 - usage_quota
+        extra_data_usage_dict[phone] = real_extra_usage if real_extra_usage >= 0 else 0
+        total_extra_percent += extra_data_usage_dict[phone]
+
+    extra_fee_holder = soup_data.find_all("div", {"class": "additionalColRight"})
+    extra_fee = float(extra_fee_holder[1].text[1:])
+
+    #print('===========')
+    for user, info in members.iteritems():
+        members[user]['data'] = members[user]['data'] - extra_fee / 10 + extra_fee * extra_data_usage_dict[user] / total_extra_percent
+        #print(user)
+        #print(extra_fee * extra_data_usage_dict[user] / total_extra_percent)
+        #print(members[user]['data'])
+    return members;
 
 if __name__ == '__main__':
 	twilio_client = TwilioRestClient(credentials.twilio['account_sid'], credentials.twilio['auth_token'])
