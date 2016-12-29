@@ -2,5 +2,7 @@ Billing & Usage - AT&T.htm
 Billing & Usage - AT&T_files/
 credentials.py
 billusage.htm
+billusage_files/
 *.pyc
+.idea/
 
