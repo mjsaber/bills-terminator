@@ -59,8 +59,8 @@ def trans_phone_format2(phone):
 
 def get_msg_body(user, info):
     msg = "Dear {}: Your monthly phone bill in total is {}, including shared data fee: {}, "\
-        .format(user, info['data'] + info['base'] + info['extra_data_fee'], info['data'])
-    if info['extra_data_fee'] > 0:
+        .format(user, info['data'] + info['base'] + info.get('extra_data_fee', 0), info['data'])
+    if info.get('extra_data_fee') > 0:
         msg += "extra data fee (your monthly data usage exceed 2G, " \
                "this is calculated by the percentage of extra data usage): {}, ".format(info['extra_data_fee'])
     msg += "base fee: {}. Please pay to Jun Ma at your convenience, thanks!".format(info['base'])
