@@ -58,12 +58,12 @@ def trans_phone_format2(phone):
 
 
 def get_msg_body(user, info):
-    msg = "Dear {}: Your monthly phone bill in total is {}, including shared data fee: {}, "\
+    msg = "Dear {}: Your monthly att bill in total is {}, including shared data fee: {}, "\
         .format(user, info['data'] + info['base'] + info.get('extra_data_fee', 0), info['data'])
     if info.get('extra_data_fee') > 0:
         msg += "extra data fee (your monthly data usage exceed 2G, " \
                "this is calculated by the percentage of extra data usage): {}, ".format(info['extra_data_fee'])
-    msg += "base fee: {}. Please pay to Jun Ma at your convenience, thanks!".format(info['base'])
+    msg += "base fee: {}. Please pay Jun Ma at your convenience, thanks!".format(info['base'])
     return msg
 
 
@@ -81,7 +81,7 @@ def print_message(menbers):
         print get_msg_body(user, info)
 
 
-# If extra fee is charged, go download https://www.att.com/olam/billUsageTiles.myworld and save as "billusage.htm" 
+# If extra fee is charged, go download https://www.att.com/olam/billUsageTiles.myworld and save as "billusage.htm"
 def trans_extra_data_fee(members):  # need to judge there is extra usage
     owner_phone = "310-600-0358"
     data_plan = 20.0
@@ -101,7 +101,7 @@ def trans_extra_data_fee(members):  # need to judge there is extra usage
     extra_data_usage_dict[owner_phone] = real_extra_usage if real_extra_usage >= 0 else 0
 
     total_extra_percent = extra_data_usage_dict[owner_phone]
-    for i in range(1, 10):
+    for i in range(0, 10):
         phone = ths[i].text[0:12]
         phone = trans_phone_format2(phone)
         real_extra_usage = total_datausage * float(ths[i].text[13:-1]) / 100 - usage_quota
@@ -123,5 +123,5 @@ if __name__ == '__main__':
     twilio_client = TwilioRestClient(credentials.twilio['account_sid'], credentials.twilio['auth_token'])
     # members = {'310-890-1520': {'phone': '+13108901520', 'data': 10.7, 'base': 20.18}}
     members = get_account_summary()
-    # print_message(members)
+    print_message(members)
     send_message(twilio_client, members)
