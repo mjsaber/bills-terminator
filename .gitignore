@@ -1,8 +1,17 @@
+.idea/
+.DS_Store
+
 Billing & Usage - AT&T.htm
 Billing & Usage - AT&T_files/
-credentials.py
+
+printBill_files/
+printBill.htm
+
 billusage.htm
 billusage_files/
+
+.virtualenv/
+
+credentials.py
 *.pyc
-.idea/
 
