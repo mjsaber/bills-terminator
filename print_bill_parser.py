@@ -98,7 +98,7 @@ def get_message_body(user, info):
     import datetime
     month = datetime.date.today().month
     return "Dear {}: Your phone bill from {}.12 to {}.12 is {}, including shared data fee({}) and base fee({}). Please pay to Jun Ma at your convinence, thanks!".format(
-        user, month, month + 1, info['data'] + info['base'], info['data'], info['base'])
+        user, month-1, month, info['data'] + info['base'], info['data'], info['base'])
 
 
 def send_message(client, billing_details):
