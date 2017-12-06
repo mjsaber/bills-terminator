@@ -5,7 +5,7 @@ import utils
 import pprint
 import argparse
 
-soup = BeautifulSoup(open('printBill.htm'), 'html.parser')
+soup = BeautifulSoup(open('Print Bill.htm'), 'html.parser')
 pp = pprint.PrettyPrinter(indent=4)
 GROUP_HOLDER = '310-600-0358'
 
@@ -17,7 +17,7 @@ def get_all_billing_info():
     '''
     user_monthly_fee = {}
     regular_data_fee = 0.0
-    all_info_blobs = soup.find_all("div", {"class": "ng-scope", "ng-repeat": "ctn in ctnList"})
+    all_info_blobs = soup.find_all("div", {"class": "accord-content-block ng-scope", "ng-repeat": "ctn in wirelessBill.ctnSummaryList"})
     for info_blob in all_info_blobs:
         is_mobile_share_data_fee = False
         user = None
@@ -66,9 +66,9 @@ def is_user_blob(cell_blob):
 
 def is_mobile_share_data(cell_blob):
     '''
-    Check if the blob is Mobile Share Value 20GB with Rollover Data blob
+    Check if the blob is `AT&T Unlimited Plus Multi Line` blob
     '''
-    blob = cell_blob.find("i", {"class": "icon-approval ng-hide", "ng-show": "mntlyChrg.showCheck"})
+    blob = cell_blob.find("i", {"class": "icon-approval ng-hide", "ng-show": "mntlyCharges.showCheck"})
     if blob is not None:
         s = cell_blob.stripped_strings.next()
         if s == 'AT&T Unlimited Plus Multi Line':
@@ -95,28 +95,30 @@ def get_monthly_charges(cell_blob):
 
 
 def get_message_body(user, info):
-    import datetime
-    month = datetime.date.today().month
-    return "Dear {}: Your phone bill from {}.12 to {}.12 is {}, including shared data fee({}) and base fee({}). Please pay to Jun Ma at your convinence, thanks!".format(
-        user, month-1, month, info['data'] + info['base'], info['data'], info['base'])
+    from datetime import datetime
+    from dateutil import relativedelta
+    start_month = (datetime.now() + relativedelta.relativedelta(months=-2)).strftime("%b")
+    end_month = (datetime.now() + relativedelta.relativedelta(months=-1)).strftime("%b")
+    return "Dear {}: Your phone bill from {}.13 to {}.12 is {}, including shared data fee({}) and base fee({}). Please pay to Jun Ma at your convinence, thanks!".format(
+        user, start_month, end_month, info['data'] + info['base'], info['data'], info['base'])
 
 
-def send_message(client, billing_details):
+def send_message(client, billing_details, live_run=False):
     for user, info in billing_details.iteritems():
-        client.messages.create(
-            to=info['phone'],
-            from_=credentials.twilio['from'],
-            body=get_message_body(user, info)
-        )
+        if live_run:
+            client.messages.create(
+                to=info['phone'],
+                from_=credentials.twilio['from'],
+                body=get_message_body(user, info)
+            )
+        else:
+            print info['phone'], get_message_body(user, info)
 
 
 def main(client, live_run):
     user_monthly_fee, regular_data_fee = get_all_billing_info()
     billing_details = generate_billing_details(user_monthly_fee, regular_data_fee)
-    if not live_run:
-        pp.pprint(billing_details)
-    else:
-        send_message(client, billing_details)
+    send_message(client, billing_details, live_run)
 
 
 if __name__ == '__main__':
