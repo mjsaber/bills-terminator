@@ -5,28 +5,29 @@ import utils
 import pprint
 import argparse
 
-soup = BeautifulSoup(open('Print Bill.htm'), 'html.parser')
+soup = BeautifulSoup(open('Print Bill.html'), 'html.parser')
 pp = pprint.PrettyPrinter(indent=4)
-GROUP_HOLDER = '310-600-0358'
+GROUP_HOLDER = '310.600.0358'
 
 
 def get_all_billing_info():
     '''
-    Get billing information for all users
-    Return user_monthly_fee {xxx-xxx-xxxx: base_fee}, regular_data_fee
+    Get billing summary for all users
+    Return user_monthly_fee {xxx-xxx-xxxx: base_fee}, shared_data_fee
     '''
     user_monthly_fee = {}
-    regular_data_fee = 0.0
-    all_info_blobs = soup.find_all("div", {"class": "accord-content-block ng-scope", "ng-repeat": "ctn in wirelessBill.ctnSummaryList"})
+    shared_data_fee = 0
+    all_info_blobs = soup.find_all("div", {"class": "ng-scope", "ng-repeat": "ctn in wirelessBill.ctnSummaryList"})
     for info_blob in all_info_blobs:
         is_mobile_share_data_fee = False
         user = None
         cell_blobs = info_blob.find_all("div", {"class": "faux-table-cell"})
+        # print cell_blob.prettify()
         for cell_blob in cell_blobs:
-            # print cell_blob.prettify()
             if is_user_blob(cell_blob):
                 user = get_user(cell_blob)
                 user_monthly_fee[user] = 0.0
+                # print user
                 continue
             if user is not None:
                 charges = get_monthly_charges(cell_blob)
@@ -38,12 +39,11 @@ def get_all_billing_info():
                 continue
             if is_mobile_share_data_fee:
                 data_fee = utils.extract_fee(cell_blob.stripped_strings.next())
-                regular_data_fee = data_fee
-                # Group holder monthly charge includes data_fee for everyone
-                user_monthly_fee[GROUP_HOLDER] -= data_fee
+                shared_data_fee = data_fee
+                # print 'Shared data fee is %s' % shared_data_fee
                 is_mobile_share_data_fee = False
                 continue
-    return user_monthly_fee, regular_data_fee
+    return user_monthly_fee, shared_data_fee
 
 
 def generate_billing_details(user_monthly_fee, regular_data_fee):
@@ -60,15 +60,17 @@ def generate_billing_details(user_monthly_fee, regular_data_fee):
 
 
 def is_user_blob(cell_blob):
-    user_blob = cell_blob.find("i", {"class": "icon-devices-mobilesmartphone"})
-    return user_blob is not None
+    user_blob = cell_blob.find("b", {"class": "ng-binding"})
+    if user_blob is not None:
+        return utils.is_phone_number(user_blob.stripped_strings.next())
+    return False
 
 
 def is_mobile_share_data(cell_blob):
     '''
     Check if the blob is `AT&T Unlimited Plus Multi Line` blob
     '''
-    blob = cell_blob.find("i", {"class": "icon-approval ng-hide", "ng-show": "mntlyCharges.showCheck"})
+    blob = cell_blob.find("span", {"class": "ng-binding ng-scope", "ng-repeat": "desc in mntlyCharges.descList track by $index"})
     if blob is not None:
         s = cell_blob.stripped_strings.next()
         if s == 'AT&T Unlimited Plus Multi Line':
@@ -80,7 +82,7 @@ def get_user(info_blob):
     '''
     Return user's phone number
     '''
-    return utils.extract_phone_number(info_blob.b.next_element)
+    return utils.extract_phone_number(info_blob.stripped_strings.next())
 
 
 def get_monthly_charges(cell_blob):
@@ -121,9 +123,15 @@ def send_message(client, billing_details, live_run=False):
 
 
 def main(client, live_run):
-    user_monthly_fee, regular_data_fee = get_all_billing_info()
-    billing_details = generate_billing_details(user_monthly_fee, regular_data_fee)
+    user_monthly_fee, shared_data_fee = get_all_billing_info()
+    # print user_monthly_fee, shared_data_fee
+    billing_details = generate_billing_details(user_monthly_fee, shared_data_fee)
     send_message(client, billing_details, live_run)
+
+
+class BillSummary(object):
+    shared_data_fee = 0
+    user_monthly_fee = {}
 
 
 if __name__ == '__main__':
