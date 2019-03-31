@@ -22,8 +22,8 @@ def get_all_billing_info():
         is_mobile_share_data_fee = False
         user = None
         cell_blobs = info_blob.find_all("div", {"class": "faux-table-cell"})
-        # print cell_blob.prettify()
         for cell_blob in cell_blobs:
+            # print cell_blob.prettify()
             if is_user_blob(cell_blob):
                 user = get_user(cell_blob)
                 user_monthly_fee[user] = 0.0
@@ -48,7 +48,7 @@ def get_all_billing_info():
 
 def generate_billing_details(user_monthly_fee, regular_data_fee):
     billing_details = {}
-    data_fee_per_person = regular_data_fee / len(user_monthly_fee.keys())
+    data_fee_per_person = round(regular_data_fee / len(user_monthly_fee.keys()), 2)
     for user, monthly_fee in user_monthly_fee.iteritems():
         phone_number = utils.alter_phone_format(user)
         billing_details[user] = {
@@ -68,12 +68,12 @@ def is_user_blob(cell_blob):
 
 def is_mobile_share_data(cell_blob):
     '''
-    Check if the blob is `AT&T Unlimited Plus Multi Line` blob
+    Check if the blob is `Shared plan charges` blob
     '''
-    blob = cell_blob.find("span", {"class": "ng-binding ng-scope", "ng-repeat": "desc in mntlyCharges.descList track by $index"})
+    blob = cell_blob.find("span")
     if blob is not None:
         s = cell_blob.stripped_strings.next()
-        if s == 'AT&T Unlimited Plus Multi Line':
+        if s == 'Shared plan charges':
             return True
     return False
 
