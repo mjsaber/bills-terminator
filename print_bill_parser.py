@@ -5,7 +5,7 @@ import utils
 import pprint
 import argparse
 
-soup = BeautifulSoup(open('Print Bill.html'), 'html.parser')
+soup = BeautifulSoup(open('Print Bill.htm'), 'html.parser')
 pp = pprint.PrettyPrinter(indent=4)
 GROUP_HOLDER = '310.600.0358'
 
