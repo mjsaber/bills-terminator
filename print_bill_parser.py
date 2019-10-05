@@ -110,9 +110,9 @@ def get_message_body(user, info):
         user, start_month, end_month, info['data'] + info['base'], info['data'], info['base'])
 
 
-def send_message(client, billing_details, live_run=False):
+def send_message(client, billing_details):
     for user, info in billing_details.iteritems():
-        if live_run:
+        if client is not None:
             client.messages.create(
                 to=info['phone'],
                 from_=credentials.twilio['from'],
@@ -122,11 +122,11 @@ def send_message(client, billing_details, live_run=False):
             print info['phone'], get_message_body(user, info)
 
 
-def main(client, live_run):
+def main(client):
     user_monthly_fee, shared_data_fee = get_all_billing_info()
     # print user_monthly_fee, shared_data_fee
     billing_details = generate_billing_details(user_monthly_fee, shared_data_fee)
-    send_message(client, billing_details, live_run)
+    send_message(client, billing_details)
 
 
 class BillSummary(object):
@@ -139,6 +139,9 @@ if __name__ == '__main__':
     parser.add_argument('--live-run', action='store_true', default=False)
     args = parser.parse_args()
 
-    twilio_client = Client(credentials.twilio['account_sid'], credentials.twilio['auth_token'])
+    if args.live_run:
+        twilio_client = Client(credentials.twilio['account_sid'], credentials.twilio['auth_token'])
+    else:
+        twilio_client = None
 
-    main(client=twilio_client, live_run=args.live_run)
+    main(client=twilio_client)
