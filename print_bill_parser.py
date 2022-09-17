@@ -101,11 +101,11 @@ def get_message_body(user, info):
     from dateutil import relativedelta
     today = datetime.today().day
     if today > 15:
-        start_month = (datetime.now() + relativedelta.relativedelta(months=-1)).strftime("%b")
-        end_month = (datetime.now()).strftime("%b")
+        start_month = (datetime.now() + relativedelta.relativedelta(months=0)).strftime("%b")
+        end_month = (datetime.now() + relativedelta.relativedelta(months=1)).strftime("%b")
     else:
-        start_month = (datetime.now() + relativedelta.relativedelta(months=-2)).strftime("%b")
-        end_month = (datetime.now() + relativedelta.relativedelta(months=-1)).strftime("%b")
+        start_month = (datetime.now() + relativedelta.relativedelta(months=-1)).strftime("%b")
+        end_month = (datetime.now() + relativedelta.relativedelta(months=0)).strftime("%b")
     return "Dear {}: Your phone bill from {}.13 to {}.12 is {}, including shared data fee({}) and base fee({}). Please pay to Jun Ma at your convinence, thanks!".format(
         user, start_month, end_month, info['data'] + info['base'], info['data'], info['base'])
 
